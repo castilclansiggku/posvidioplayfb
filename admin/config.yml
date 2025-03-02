@@ -1,14 +1,14 @@
 backend:
   name: git-gateway
-  branch: main  # Ganti jika repositori menggunakan branch lain seperti "master"
+  branch: main  # Sesuaikan dengan nama branch di GitHub (bisa "master" atau "main")
 
-media_folder: "images/uploads" # Folder penyimpanan gambar
+media_folder: "images/uploads"  # Folder untuk menyimpan gambar
 public_folder: "/images/uploads"
 
 collections:
   - name: "posts"
     label: "Posts"
-    folder: "posts"  # Folder tempat menyimpan artikel
+    folder: "posts"  # Tempat menyimpan artikel Markdown
     create: true
     slug: "{{slug}}"
     fields:
