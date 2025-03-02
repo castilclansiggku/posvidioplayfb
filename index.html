@@ -3,10 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Blog</title>
+    <title>Blog Saya</title>
+    <script>
+        async function loadPosts() {
+            const response = await fetch('/posts/example.md');
+            const text = await response.text();
+            document.getElementById('content').innerText = text;
+        }
+        window.onload = loadPosts;
+    </script>
 </head>
 <body>
-    <h1>Selamat Datang di Blog Saya</h1>
-    <p>Klik <a href="/admin">di sini</a> untuk masuk ke admin panel.</p>
+    <h1>Daftar Artikel</h1>
+    <div id="content">Memuat artikel...</div>
 </body>
 </html>
