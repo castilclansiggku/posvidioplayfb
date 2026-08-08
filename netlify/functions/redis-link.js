@@ -67,7 +67,7 @@ exports.handler = async (event) => {
 
       // Simpan dengan prefix "note:" dan expired 7 hari
       await fetch(
-        `${UPSTASH_URL}/set/note:${shortId}/${encodeURIComponent(originalUrl)}?EX=604800`,
+        `${UPSTASH_URL}/set/note:${shortId}/${encodeURIComponent(originalUrl)}?EX=86400`,
         {
           headers: {
             Authorization: `Bearer ${UPSTASH_TOKEN}`,
