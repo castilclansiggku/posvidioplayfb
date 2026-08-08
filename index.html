@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SafeNote</title>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -285,87 +287,192 @@
   </footer>
 
   <script>
-    // ======================
-    // Konfigurasi (nanti diisi)
-    // ======================
-    // Firebase & Redis akan ditambahkan nanti
+  // ======================
+  // Firebase Config
+  // ======================
+  const firebaseConfig = {
+    apiKey: "AIzaSyBoqAYX279Cjhj2ts74IDTFuE1GDoji1H0",
+    authDomain: "justpasteku.firebaseapp.com",
+    databaseURL: "https://justpasteku-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "justpasteku",
+    storageBucket: "justpasteku.firebasestorage.app",
+    messagingSenderId: "259720666291",
+    appId: "1:259720666291:web:6133045d2681871b8164c6"
+  };
 
-    // ======================
-    // Ambil parameter dari URL
-    // ======================
-    function getNoteIdFromUrl() {
-      const params = new URLSearchParams(window.location.search);
-      // Ambil parameter pertama (misal ?Xgdjub atau ?id=Xgdjub)
-      if (params.has('id')) return params.get('id');
-      
-      // Kalau formatnya ?Xgdjub (tanpa key)
-      const raw = window.location.search.substring(1);
-      if (raw && !raw.includes('=')) return raw;
-      
+</script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+  if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
+  }
+  const database = firebase.database();
+
+  // ======================
+  // Cache Config
+  // ======================
+  const CACHE_PREFIX = "safenote_";
+  const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 jam
+
+  // ======================
+  // Ambil Note ID dari URL
+  // ======================
+  function getNoteIdFromUrl() {
+    const params = new URLSearchParams(window.location.search);
+    if (params.has('id')) return params.get('id');
+
+    // Format: ?Xgdjub (tanpa key)
+    const raw = window.location.search.substring(1);
+    if (raw && !raw.includes('=')) return raw;
+
+    return null;
+  }
+
+  // ======================
+  // Tampilkan View
+  // ======================
+  function showView(viewName) {
+    document.getElementById('homeView').style.display = 'none';
+    document.getElementById('noteView').style.display = 'none';
+    document.getElementById('loadingView').style.display = 'none';
+    document.getElementById('errorView').style.display = 'none';
+
+    if (viewName === 'home') document.getElementById('homeView').style.display = 'block';
+    if (viewName === 'note') document.getElementById('noteView').style.display = 'block';
+    if (viewName === 'loading') document.getElementById('loadingView').style.display = 'block';
+    if (viewName === 'error') document.getElementById('errorView').style.display = 'block';
+  }
+
+  // ======================
+  // Browser Cache (localStorage)
+  // ======================
+  function getFromBrowserCache(noteId) {
+    try {
+      const raw = localStorage.getItem(CACHE_PREFIX + noteId);
+      if (!raw) return null;
+
+      const data = JSON.parse(raw);
+      if (Date.now() - data.timestamp > CACHE_DURATION) {
+        localStorage.removeItem(CACHE_PREFIX + noteId);
+        return null;
+      }
+      return data.content;
+    } catch (e) {
       return null;
     }
+  }
 
-    // ======================
-    // Tampilkan view tertentu
-    // ======================
-    function showView(viewName) {
-      document.getElementById('homeView').style.display = 'none';
-      document.getElementById('noteView').style.display = 'none';
-      document.getElementById('loadingView').style.display = 'none';
-      document.getElementById('errorView').style.display = 'none';
+  function saveToBrowserCache(noteId, content) {
+    try {
+      localStorage.setItem(CACHE_PREFIX + noteId, JSON.stringify({
+        content,
+        timestamp: Date.now()
+      }));
+    } catch (e) {}
+  }
 
-      if (viewName === 'home') document.getElementById('homeView').style.display = 'block';
-      if (viewName === 'note') document.getElementById('noteView').style.display = 'block';
-      if (viewName === 'loading') document.getElementById('loadingView').style.display = 'block';
-      if (viewName === 'error') document.getElementById('errorView').style.display = 'block';
+  // ======================
+  // Redis Cache (via Netlify Function)
+  // ======================
+  async function checkRedis(noteId) {
+    try {
+      const res = await fetch(`/.netlify/functions/redis-link?id=${encodeURIComponent(noteId)}`);
+      const data = await res.json();
+      return data.found ? data.originalUrl : null; // kita pakai field originalUrl untuk content
+    } catch (err) {
+      console.warn("Redis error:", err);
+      return null;
     }
+  }
 
-    // ======================
-    // Copy link
-    // ======================
-    function copyCurrentLink() {
-      navigator.clipboard.writeText(window.location.href).then(() => {
-        const btn = document.getElementById('copyLinkBtn');
-        const original = btn.textContent;
-        btn.textContent = 'Tersalin!';
-        setTimeout(() => btn.textContent = original, 2000);
+  async function saveToRedis(noteId, content) {
+    try {
+      await fetch("/.netlify/functions/redis-link", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ shortId: noteId, originalUrl: content })
       });
+    } catch (err) {
+      console.warn("Gagal simpan ke Redis:", err);
+    }
+  }
+
+  // ======================
+  // Ambil dari Firebase
+  // ======================
+  async function getFromFirebase(noteId) {
+    try {
+      const snapshot = await database.ref('notes/' + noteId).once('value');
+      const data = snapshot.val();
+      return data?.content || null;
+    } catch (err) {
+      console.error("Firebase error:", err);
+      return null;
+    }
+  }
+
+  // ======================
+  // Copy Link
+  // ======================
+  function copyCurrentLink() {
+    navigator.clipboard.writeText(window.location.href).then(() => {
+      const btn = document.getElementById('copyLinkBtn');
+      const original = btn.textContent;
+      btn.textContent = 'Tersalin!';
+      setTimeout(() => btn.textContent = original, 2000);
+    });
+  }
+
+  // ======================
+  // Main Logic
+  // ======================
+  async function main() {
+    const noteId = getNoteIdFromUrl();
+
+    // Tidak ada parameter → homepage
+    if (!noteId) {
+      showView('home');
+      return;
     }
 
-    // ======================
-    // Main Logic
-    // ======================
-    async function main() {
-      const noteId = getNoteIdFromUrl();
+    // Ada parameter → load catatan
+    showView('loading');
+    document.getElementById('noteIdDisplay').textContent = noteId;
 
-      // Tidak ada parameter → tampilkan homepage
-      if (!noteId) {
-        showView('home');
-        return;
-      }
-
-      // Ada parameter → load catatan
-      showView('loading');
-      document.getElementById('noteIdDisplay').textContent = noteId;
-
-      // ==============================
-      // NANTI: Cek localStorage → Redis → Firebase
-      // Untuk sekarang masih dummy
-      // ==============================
-      
-      // Contoh sementara (hapus nanti)
-      setTimeout(() => {
-        // Simulasi berhasil
-        // document.getElementById('noteContent').textContent = "Ini contoh isi catatan...";
-        // showView('note');
-
-        // Simulasi tidak ketemu
-        showView('error');
-      }, 800);
+    // 1. Cek localStorage dulu
+    const browserCache = getFromBrowserCache(noteId);
+    if (browserCache) {
+      document.getElementById('noteContent').textContent = browserCache;
+      showView('note');
+      return;
     }
 
-    // Jalankan
-    main();
-  </script>
+    // 2. Cek Redis
+    const redisCache = await checkRedis(noteId);
+    if (redisCache) {
+      saveToBrowserCache(noteId, redisCache);
+      document.getElementById('noteContent').textContent = redisCache;
+      showView('note');
+      return;
+    }
+
+    // 3. Ambil dari Firebase
+    const content = await getFromFirebase(noteId);
+
+    if (content) {
+      // Simpan ke cache
+      saveToRedis(noteId, content);
+      saveToBrowserCache(noteId, content);
+
+      document.getElementById('noteContent').textContent = content;
+      showView('note');
+    } else {
+      showView('error');
+    }
+  }
+
+  // Jalankan
+  main();
+</script>
 </body>
 </html>
