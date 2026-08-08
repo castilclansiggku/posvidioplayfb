@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login - SafeNote</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+
+  <style>
+    :root {
+      --bg: #0f1117;
+      --bg-card: #1a1d27;
+      --bg-input: #12151f;
+      --text: #e8eaed;
+      --text-muted: #9aa0a6;
+      --border: #2d3343;
+      --primary: #6c8cff;
+      --primary-hover: #5a7af0;
+      --danger: #f87171;
+      --radius: 12px;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .login-card {
+      width: 100%;
+      max-width: 400px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 36px 32px;
+    }
+
+    .logo {
+      text-align: center;
+      font-size: 1.5rem;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      margin-bottom: 8px;
+    }
+
+    .logo span {
+      color: var(--primary);
+    }
+
+    .subtitle {
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      margin-bottom: 28px;
+    }
+
+    .form-group {
+      margin-bottom: 18px;
+    }
+
+    label {
+      display: block;
+      font-size: 0.875rem;
+      font-weight: 500;
+      margin-bottom: 7px;
+    }
+
+    input {
+      width: 100%;
+      padding: 12px 14px;
+      font-size: 0.95rem;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      background: var(--bg-input);
+      color: var(--text);
+      outline: none;
+      font-family: inherit;
+      transition: border-color 0.2s;
+    }
+
+    input:focus {
+      border-color: var(--primary);
+    }
+
+    input::placeholder {
+      color: var(--text-muted);
+    }
+
+    .btn {
+      width: 100%;
+      padding: 13px;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.2s ease;
+      margin-top: 8px;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-hover);
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .error-msg {
+      color: var(--danger);
+      font-size: 0.875rem;
+      text-align: center;
+      margin-top: 16px;
+      min-height: 20px;
+    }
+
+    .back-link {
+      display: block;
+      text-align: center;
+      margin-top: 24px;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      text-decoration: none;
+    }
+
+    .back-link:hover {
+      color: var(--primary);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="login-card">
+    <div class="logo">Safe<span>Note</span></div>
+    <p class="subtitle">Login untuk membuat catatan</p>
+
+    <form id="loginForm" onsubmit="return handleLogin(event)">
+      <div class="form-group">
+        <label for="email">Email</label>
+        <input type="email" id="email" placeholder="email@example.com" required autocomplete="username">
+      </div>
+
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input type="password" id="password" placeholder="Masukkan password" required autocomplete="current-password">
+      </div>
+
+      <button type="submit" class="btn btn-primary" id="loginBtn">Masuk</button>
+    </form>
+
+    <p class="error-msg" id="errorMsg"></p>
+
+    <a href="/" class="back-link">← Kembali ke Beranda</a>
+  </div>
+
+  <script>
+    // ======================
+    // Firebase Config
+    // ======================
+    const firebaseConfig = {
+      apiKey: "AIzaSyBoqAYX279Cjhj2ts74IDTFuE1GDoji1H0",
+      authDomain: "justpasteku.firebaseapp.com",
+      databaseURL: "https://justpasteku-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "justpasteku",
+      storageBucket: "justpasteku.firebasestorage.app",
+      messagingSenderId: "259720666291",
+      appId: "1:259720666291:web:6133045d2681871b8164c6"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+
+    // ======================
+    // Jika sudah login, langsung ke create
+    // ======================
+    auth.onAuthStateChanged((user) => {
+      if (user) {
+        window.location.href = '/create.html';
+      }
+    });
+
+    // ======================
+    // Handle Login
+    // ======================
+    function handleLogin(e) {
+      e.preventDefault();
+
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      const errorMsg = document.getElementById('errorMsg');
+      const loginBtn = document.getElementById('loginBtn');
+
+      errorMsg.textContent = '';
+      loginBtn.disabled = true;
+      loginBtn.textContent = 'Memproses...';
+
+      auth.signInWithEmailAndPassword(email, password)
+        .then(() => {
+          // Berhasil → akan otomatis diarahkan oleh onAuthStateChanged
+        })
+        .catch((error) => {
+          console.error(error);
+          let message = 'Gagal login.';
+
+          if (error.code === 'auth/user-not-found') {
+            message = 'Email tidak ditemukan.';
+          } else if (error.code === 'auth/wrong-password') {
+            message = 'Password salah.';
+          } else if (error.code === 'auth/invalid-email') {
+            message = 'Format email tidak valid.';
+          } else if (error.code === 'auth/too-many-requests') {
+            message = 'Terlalu banyak percobaan. Coba lagi nanti.';
+          } else {
+            message = error.message;
+          }
+
+          errorMsg.textContent = message;
+          loginBtn.disabled = false;
+          loginBtn.textContent = 'Masuk';
+        });
+
+      return false;
+    }
+  </script>
+</body>
+</html>
