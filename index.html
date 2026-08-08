@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/x-icon" href="favicon.svg">
   <title>SafeNote</title>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
@@ -279,6 +280,36 @@
       <p>Link yang kamu buka mungkin sudah dihapus atau tidak valid.</p>
       <a href="/" class="btn btn-primary">Kembali ke Beranda</a>
     </div>
+	
+	<!-- Redirect Warning View -->
+<div id="redirectView" style="display: none; text-align: center; padding: 60px 20px;">
+  <h2 style="font-size: 1.5rem; margin-bottom: 12px;">Kamu akan meninggalkan SafeNote</h2>
+  <p style="color: var(--text-muted); margin-bottom: 8px;">
+    Kamu mengklik tautan yang akan mengarahkan ke luar SafeNote:
+  </p>
+  <p id="redirectTarget" style="
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 18px;
+    margin: 20px auto;
+    max-width: 500px;
+    word-break: break-all;
+    font-family: monospace;
+    font-size: 0.95rem;
+    color: var(--primary);
+  "></p>
+
+  <label style="display: flex; align-items: center; justify-content: center; gap: 8px; margin: 24px 0; color: var(--text-muted); font-size: 0.9rem; cursor: pointer;">
+    <input type="checkbox" id="skipRedirectWarning">
+    Jangan tampilkan pesan ini lagi
+  </label>
+
+  <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 10px;">
+    <button class="btn btn-ghost" onclick="goBackToNote()">Kembali ke Catatan</button>
+    <button class="btn btn-primary" onclick="continueToExternal()">Lanjutkan</button>
+  </div>
+</div>
 
   </main>
 
@@ -306,21 +337,50 @@
   const database = firebase.database();
 
   // ======================
-  // Cache Config
+  // Config
   // ======================
   const CACHE_PREFIX = "safenote_";
   const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 jam
+  const SKIP_WARNING_KEY = "safenote_skip_redirect_warning";
+
+  let currentNoteId = null;
+  let externalUrl = null;
 
   // ======================
-  // Ambil Note ID dari URL
+  // Ambil parameter dari URL
   // ======================
   function getNoteIdFromUrl() {
     const params = new URLSearchParams(window.location.search);
+
+    // Format khusus redirect: ?=https://example.com
+    // atau ?go=https://example.com
+    const search = window.location.search;
+    if (search.startsWith("?=") || search.startsWith("?go=")) {
+      return null; // ini redirect, bukan note
+    }
+
     if (params.has('id')) return params.get('id');
 
-    // Format: ?Xgdjub (tanpa key)
+    // Format: ?HckT2esb
     const raw = window.location.search.substring(1);
     if (raw && !raw.includes('=')) return raw;
+
+    return null;
+  }
+
+  function getExternalUrlFromQuery() {
+    const search = window.location.search;
+
+    // Format: ?=https://example.com
+    if (search.startsWith("?=")) {
+      return decodeURIComponent(search.substring(2));
+    }
+
+    // Format: ?go=https://example.com
+    const params = new URLSearchParams(search);
+    if (params.has('go')) {
+      return params.get('go');
+    }
 
     return null;
   }
@@ -329,25 +389,22 @@
   // Tampilkan View
   // ======================
   function showView(viewName) {
-    document.getElementById('homeView').style.display = 'none';
-    document.getElementById('noteView').style.display = 'none';
-    document.getElementById('loadingView').style.display = 'none';
-    document.getElementById('errorView').style.display = 'none';
+    ['homeView', 'noteView', 'loadingView', 'errorView', 'redirectView'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.style.display = 'none';
+    });
 
-    if (viewName === 'home') document.getElementById('homeView').style.display = 'block';
-    if (viewName === 'note') document.getElementById('noteView').style.display = 'block';
-    if (viewName === 'loading') document.getElementById('loadingView').style.display = 'block';
-    if (viewName === 'error') document.getElementById('errorView').style.display = 'block';
+    const target = document.getElementById(viewName);
+    if (target) target.style.display = 'block';
   }
 
   // ======================
-  // Browser Cache (localStorage)
+  // Browser Cache
   // ======================
   function getFromBrowserCache(noteId) {
     try {
       const raw = localStorage.getItem(CACHE_PREFIX + noteId);
       if (!raw) return null;
-
       const data = JSON.parse(raw);
       if (Date.now() - data.timestamp > CACHE_DURATION) {
         localStorage.removeItem(CACHE_PREFIX + noteId);
@@ -369,13 +426,13 @@
   }
 
   // ======================
-  // Redis Cache (via Netlify Function)
+  // Redis Cache
   // ======================
   async function checkRedis(noteId) {
     try {
       const res = await fetch(`/.netlify/functions/redis-link?id=${encodeURIComponent(noteId)}`);
       const data = await res.json();
-      return data.found ? data.originalUrl : null; // kita pakai field originalUrl untuk content
+      return data.found ? data.originalUrl : null;
     } catch (err) {
       console.warn("Redis error:", err);
       return null;
@@ -395,7 +452,7 @@
   }
 
   // ======================
-  // Ambil dari Firebase
+  // Firebase
   // ======================
   async function getFromFirebase(noteId) {
     try {
@@ -406,6 +463,43 @@
       console.error("Firebase error:", err);
       return null;
     }
+  }
+
+  // ======================
+  // Ubah URL jadi link khusus
+  // ======================
+  function linkify(text) {
+    // Deteksi http/https
+    const urlRegex = /(https?:\/\/[^\s<]+)/g;
+
+    return text.replace(urlRegex, (url) => {
+      // Bersihkan tanda baca di akhir (., ! ? ) ]
+      let cleanUrl = url;
+      let trailing = '';
+
+      const match = url.match(/[.,!?;:)]+$/);
+      if (match) {
+        trailing = match[0];
+        cleanUrl = url.slice(0, -trailing.length);
+      }
+
+      const safeHref = '/?=' + encodeURIComponent(cleanUrl);
+      return `<a href="${safeHref}" style="color: var(--primary); text-decoration: underline;">${cleanUrl}</a>${trailing}`;
+    });
+  }
+
+  // ======================
+  // Tampilkan Isi Catatan
+  // ======================
+  function displayNote(noteId, content) {
+    currentNoteId = noteId;
+    document.getElementById('noteIdDisplay').textContent = noteId;
+
+    // Ubah URL menjadi link
+    const linkedContent = linkify(content);
+    document.getElementById('noteContent').innerHTML = linkedContent;
+
+    showView('noteView');
   }
 
   // ======================
@@ -421,50 +515,96 @@
   }
 
   // ======================
+  // Redirect Warning Logic
+  // ======================
+  function showRedirectWarning(url) {
+    externalUrl = url;
+    document.getElementById('redirectTarget').textContent = url;
+
+    // Cek apakah user pernah centang "skip"
+    const skip = localStorage.getItem(SKIP_WARNING_KEY) === 'true';
+    if (skip) {
+      // Langsung lanjut tanpa peringatan
+      window.location.href = url;
+      return;
+    }
+
+    showView('redirectView');
+  }
+
+  function continueToExternal() {
+    const skipCheckbox = document.getElementById('skipRedirectWarning');
+    if (skipCheckbox && skipCheckbox.checked) {
+      localStorage.setItem(SKIP_WARNING_KEY, 'true');
+    }
+
+    if (externalUrl) {
+      window.location.href = externalUrl;
+    }
+  }
+
+  function goBackToNote() {
+    if (currentNoteId) {
+      window.location.href = '/?' + currentNoteId;
+    } else {
+      // Coba ambil dari referrer atau kembali ke home
+      window.history.back();
+    }
+  }
+
+  // ======================
   // Main Logic
   // ======================
   async function main() {
+    // 1. Cek apakah ini redirect warning
+    const external = getExternalUrlFromQuery();
+    if (external) {
+      // Validasi sederhana supaya hanya http/https
+      if (external.startsWith('http://') || external.startsWith('https://')) {
+        showRedirectWarning(external);
+        return;
+      } else {
+        showView('errorView');
+        return;
+      }
+    }
+
+    // 2. Cek note ID
     const noteId = getNoteIdFromUrl();
 
-    // Tidak ada parameter → homepage
     if (!noteId) {
-      showView('home');
+      showView('homeView');
       return;
     }
 
-    // Ada parameter → load catatan
-    showView('loading');
-    document.getElementById('noteIdDisplay').textContent = noteId;
+    // Ada note ID → load catatan
+    showView('loadingView');
+    currentNoteId = noteId;
 
-    // 1. Cek localStorage dulu
+    // Layer 1: localStorage
     const browserCache = getFromBrowserCache(noteId);
     if (browserCache) {
-      document.getElementById('noteContent').textContent = browserCache;
-      showView('note');
+      displayNote(noteId, browserCache);
       return;
     }
 
-    // 2. Cek Redis
+    // Layer 2: Redis
     const redisCache = await checkRedis(noteId);
     if (redisCache) {
       saveToBrowserCache(noteId, redisCache);
-      document.getElementById('noteContent').textContent = redisCache;
-      showView('note');
+      displayNote(noteId, redisCache);
       return;
     }
 
-    // 3. Ambil dari Firebase
+    // Layer 3: Firebase
     const content = await getFromFirebase(noteId);
 
     if (content) {
-      // Simpan ke cache
       saveToRedis(noteId, content);
       saveToBrowserCache(noteId, content);
-
-      document.getElementById('noteContent').textContent = content;
-      showView('note');
+      displayNote(noteId, content);
     } else {
-      showView('error');
+      showView('errorView');
     }
   }
 
