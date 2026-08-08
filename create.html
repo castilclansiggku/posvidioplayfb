@@ -3,12 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Buat Catatan - SafeNote</title>
+  <link rel="icon" type="image/x-icon" href="favicon.svg">
+  <title>Kelola Catatan - SafeNote</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-  <!-- Firebase SDK (Compat) -->
+  <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
@@ -28,11 +29,7 @@
       --radius: 12px;
     }
 
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
 
     body {
       font-family: 'Inter', system-ui, -apple-system, sans-serif;
@@ -61,18 +58,15 @@
       color: var(--text);
       text-decoration: none;
     }
-
-    .logo span {
-      color: var(--primary);
-    }
+    .logo span { color: var(--primary); }
 
     .btn {
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      padding: 9px 16px;
+      padding: 8px 14px;
       border-radius: 9px;
-      font-size: 0.9rem;
+      font-size: 0.875rem;
       font-weight: 500;
       border: none;
       cursor: pointer;
@@ -81,67 +75,68 @@
       text-decoration: none;
     }
 
-    .btn-primary {
-      background: var(--primary);
-      color: white;
-    }
-
-    .btn-primary:hover {
-      background: var(--primary-hover);
-    }
+    .btn-primary { background: var(--primary); color: white; }
+    .btn-primary:hover { background: var(--primary-hover); }
+    .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
 
     .btn-ghost {
       background: transparent;
       color: var(--text-muted);
       border: 1px solid var(--border);
     }
-
-    .btn-ghost:hover {
-      background: var(--bg-input);
-      color: var(--text);
-    }
+    .btn-ghost:hover { background: var(--bg-input); color: var(--text); }
 
     .btn-danger {
-      background: rgba(248, 113, 113, 0.15);
+      background: rgba(248, 113, 113, 0.12);
       color: var(--danger);
-      border: 1px solid rgba(248, 113, 113, 0.3);
+      border: 1px solid rgba(248, 113, 113, 0.25);
+    }
+    .btn-danger:hover { background: rgba(248, 113, 113, 0.22); }
+
+    .btn-success {
+      background: rgba(52, 211, 153, 0.12);
+      color: var(--success);
+      border: 1px solid rgba(52, 211, 153, 0.25);
     }
 
     .container {
-      max-width: 860px;
+      max-width: 900px;
       margin: 0 auto;
-      padding: 40px 20px 80px;
+      padding: 32px 20px 80px;
     }
 
     h1 {
-      font-size: 1.6rem;
+      font-size: 1.5rem;
       font-weight: 700;
-      margin-bottom: 8px;
+      margin-bottom: 6px;
       letter-spacing: -0.03em;
     }
 
     .subtitle {
       color: var(--text-muted);
-      margin-bottom: 28px;
+      margin-bottom: 24px;
       font-size: 0.95rem;
     }
 
-    .form-group {
+    .user-info {
+      font-size: 0.85rem;
+      color: var(--text-muted);
       margin-bottom: 20px;
     }
+
+    .form-group { margin-bottom: 16px; }
 
     label {
       display: block;
       font-size: 0.875rem;
       font-weight: 500;
       margin-bottom: 8px;
-      color: var(--text);
     }
 
     textarea {
       width: 100%;
-      min-height: 320px;
-      padding: 18px 20px;
+      min-height: 260px;
+      padding: 16px 18px;
       font-size: 1rem;
       border: 1.5px solid var(--border);
       border-radius: var(--radius);
@@ -153,70 +148,117 @@
       line-height: 1.7;
       transition: border-color 0.2s;
     }
-
-    textarea:focus {
-      border-color: var(--primary);
-    }
-
-    textarea::placeholder {
-      color: var(--text-muted);
-    }
+    textarea:focus { border-color: var(--primary); }
+    textarea::placeholder { color: var(--text-muted); }
 
     .actions {
       display: flex;
-      gap: 12px;
+      gap: 10px;
       flex-wrap: wrap;
       margin-top: 8px;
+      align-items: center;
     }
 
-    /* Result box setelah berhasil */
-    #resultBox {
-      display: none;
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 24px;
-      margin-top: 28px;
-    }
-
-    #resultBox h3 {
-      font-size: 1.1rem;
-      margin-bottom: 12px;
-      color: var(--success);
-    }
-
-    .link-box {
-      display: flex;
-      gap: 10px;
-      margin-top: 12px;
-    }
-
-    .link-box input {
-      flex: 1;
-      padding: 12px 14px;
-      border-radius: 9px;
-      border: 1.5px solid var(--border);
+    .mode-badge {
+      font-size: 0.8rem;
+      padding: 4px 10px;
+      border-radius: 20px;
       background: var(--bg-input);
-      color: var(--text);
-      font-size: 0.9rem;
-      outline: none;
-      font-family: monospace;
+      color: var(--text-muted);
+      border: 1px solid var(--border);
     }
 
-    .user-info {
-      font-size: 0.85rem;
-      color: var(--text-muted);
-      margin-bottom: 20px;
+    .mode-badge.edit {
+      background: rgba(108, 140, 255, 0.15);
+      color: var(--primary);
+      border-color: rgba(108, 140, 255, 0.3);
     }
 
     .error-msg {
       color: var(--danger);
       font-size: 0.875rem;
-      margin-top: 10px;
+      margin-top: 12px;
       display: none;
     }
 
-    /* Loading overlay */
+    .success-msg {
+      color: var(--success);
+      font-size: 0.875rem;
+      margin-top: 12px;
+      display: none;
+    }
+
+    /* List Catatan */
+    .notes-section {
+      margin-top: 48px;
+      border-top: 1px solid var(--border);
+      padding-top: 32px;
+    }
+
+    .notes-section h2 {
+      font-size: 1.2rem;
+      font-weight: 600;
+      margin-bottom: 16px;
+    }
+
+    .note-item {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px 18px;
+      margin-bottom: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+      transition: border-color 0.2s;
+    }
+
+    .note-item:hover {
+      border-color: #3d4558;
+    }
+
+    .note-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .note-id {
+      font-family: monospace;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--primary);
+      margin-bottom: 4px;
+    }
+
+    .note-preview {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 100%;
+    }
+
+    .note-date {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 6px;
+    }
+
+    .note-actions {
+      display: flex;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .empty-notes {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--text-muted);
+      font-size: 0.95rem;
+    }
+
     #authLoading {
       position: fixed;
       inset: 0;
@@ -238,24 +280,23 @@
       animation: spin 0.8s linear infinite;
     }
 
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
+    @keyframes spin { to { transform: rotate(360deg); } }
 
     @media (max-width: 600px) {
-      .container {
-        padding: 28px 16px 60px;
+      .container { padding: 24px 16px 60px; }
+      .note-item {
+        flex-direction: column;
+        align-items: stretch;
       }
-
-      textarea {
-        min-height: 260px;
+      .note-actions {
+        justify-content: flex-end;
       }
     }
   </style>
 </head>
 <body>
 
-  <!-- Loading Auth Check -->
+  <!-- Loading Auth -->
   <div id="authLoading">
     <div class="spinner"></div>
     <p style="color: var(--text-muted);">Memeriksa login...</p>
@@ -271,32 +312,35 @@
   </header>
 
   <main class="container" id="mainContent" style="display: none;">
-    <h1>Buat Catatan Baru</h1>
-    <p class="subtitle">Tulis teks, kode, atau catatan apa saja. Setelah disimpan, kamu akan mendapat tautan unik.</p>
+    <h1>Kelola Catatan</h1>
+    <p class="subtitle">Buat, edit, atau hapus catatan milikmu.</p>
 
     <div class="user-info">
       Login sebagai: <strong id="displayEmail"></strong>
     </div>
 
+    <!-- Form -->
     <div class="form-group">
-      <label for="noteContent">Isi Catatan</label>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+        <label for="noteContent">Isi Catatan</label>
+        <span class="mode-badge" id="modeBadge">Mode: Buat Baru</span>
+      </div>
       <textarea id="noteContent" placeholder="Tulis catatanmu di sini..."></textarea>
     </div>
 
     <div class="actions">
       <button class="btn btn-primary" id="saveBtn" onclick="saveNote()">Simpan Catatan</button>
-      <a href="/" class="btn btn-ghost">Batal</a>
+      <button class="btn btn-ghost" id="cancelEditBtn" onclick="cancelEdit()" style="display: none;">Batal Edit</button>
     </div>
 
     <p class="error-msg" id="errorMsg"></p>
+    <p class="success-msg" id="successMsg"></p>
 
-    <!-- Hasil setelah berhasil -->
-    <div id="resultBox">
-      <h3>Catatan berhasil disimpan!</h3>
-      <p style="color: var(--text-muted); font-size: 0.9rem;">Salin tautan di bawah ini untuk membagikan catatan:</p>
-      <div class="link-box">
-        <input type="text" id="resultLink" readonly>
-        <button class="btn btn-primary" onclick="copyLink()">Salin</button>
+    <!-- Daftar Catatan -->
+    <div class="notes-section">
+      <h2>Catatan Saya</h2>
+      <div id="notesList">
+        <div class="empty-notes">Memuat catatan...</div>
       </div>
     </div>
   </main>
@@ -319,27 +363,30 @@
     const auth = firebase.auth();
     const database = firebase.database();
 
+    let currentUser = null;
+    let editingNoteId = null; // null = mode buat baru
+
     // ======================
-    // Cek Login
+    // Auth Check
     // ======================
     auth.onAuthStateChanged((user) => {
       const loading = document.getElementById('authLoading');
       const main = document.getElementById('mainContent');
 
       if (user) {
-        // Sudah login
+        currentUser = user;
         loading.style.display = 'none';
         main.style.display = 'block';
         document.getElementById('userEmail').textContent = user.email;
         document.getElementById('displayEmail').textContent = user.email;
+        loadMyNotes();
       } else {
-        // Belum login → lempar ke login.html
         window.location.href = '/login.html';
       }
     });
 
     // ======================
-    // Generate ID acak
+    // Generate ID
     // ======================
     function generateId(length = 8) {
       const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789';
@@ -351,14 +398,120 @@
     }
 
     // ======================
-    // Simpan Catatan
+    // Format Tanggal
+    // ======================
+    function formatDate(timestamp) {
+      if (!timestamp) return '-';
+      const date = new Date(timestamp);
+      const now = new Date();
+      const diff = now - date;
+
+      if (diff < 60000) return 'Baru saja';
+      if (diff < 3600000) return Math.floor(diff / 60000) + ' menit yang lalu';
+      if (diff < 86400000) return Math.floor(diff / 3600000) + ' jam yang lalu';
+      if (diff < 604800000) return Math.floor(diff / 86400000) + ' hari yang lalu';
+
+      return date.toLocaleDateString('id-ID', {
+        day: 'numeric', month: 'short', year: 'numeric'
+      });
+    }
+
+    // ======================
+    // Load Catatan Saya
+    // ======================
+    function loadMyNotes() {
+      const list = document.getElementById('notesList');
+      list.innerHTML = '<div class="empty-notes">Memuat catatan...</div>';
+
+      database.ref('notes').orderByChild('createdBy').equalTo(currentUser.uid).once('value')
+        .then((snapshot) => {
+          const notes = [];
+          snapshot.forEach((child) => {
+            notes.push({
+              id: child.key,
+              ...child.val()
+            });
+          });
+
+          // Urutkan terbaru dulu
+          notes.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+
+          if (notes.length === 0) {
+            list.innerHTML = '<div class="empty-notes">Belum ada catatan. Buat catatan pertamamu di atas.</div>';
+            return;
+          }
+
+          list.innerHTML = notes.map(note => {
+            const preview = (note.content || '').substring(0, 80).replace(/\n/g, ' ');
+            return `
+              <div class="note-item" id="note-${note.id}">
+                <div class="note-info">
+                  <div class="note-id">${note.id}</div>
+                  <div class="note-preview">${preview || '(kosong)'}...</div>
+                  <div class="note-date">${formatDate(note.createdAt)}</div>
+                </div>
+                <div class="note-actions">
+                  <button class="btn btn-ghost" onclick="openNote('${note.id}')">Buka</button>
+                  <button class="btn btn-success" onclick="copyNoteLink('${note.id}')">Salin</button>
+                  <button class="btn btn-danger" onclick="deleteNote('${note.id}')">Hapus</button>
+                </div>
+              </div>
+            `;
+          }).join('');
+        })
+        .catch((err) => {
+          console.error(err);
+          list.innerHTML = '<div class="empty-notes">Gagal memuat catatan.</div>';
+        });
+    }
+
+    // ======================
+    // Buka Catatan (Edit Mode)
+    // ======================
+    function openNote(noteId) {
+      database.ref('notes/' + noteId).once('value')
+        .then((snapshot) => {
+          const data = snapshot.val();
+          if (!data) {
+            alert('Catatan tidak ditemukan');
+            return;
+          }
+
+          editingNoteId = noteId;
+          document.getElementById('noteContent').value = data.content || '';
+          document.getElementById('modeBadge').textContent = 'Mode: Edit (' + noteId + ')';
+          document.getElementById('modeBadge').classList.add('edit');
+          document.getElementById('cancelEditBtn').style.display = 'inline-flex';
+          document.getElementById('saveBtn').textContent = 'Update Catatan';
+
+          // Scroll ke atas
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+    }
+
+    // ======================
+    // Batal Edit
+    // ======================
+    function cancelEdit() {
+      editingNoteId = null;
+      document.getElementById('noteContent').value = '';
+      document.getElementById('modeBadge').textContent = 'Mode: Buat Baru';
+      document.getElementById('modeBadge').classList.remove('edit');
+      document.getElementById('cancelEditBtn').style.display = 'none';
+      document.getElementById('saveBtn').textContent = 'Simpan Catatan';
+      hideMessages();
+    }
+
+    // ======================
+    // Simpan / Update
     // ======================
     async function saveNote() {
       const content = document.getElementById('noteContent').value.trim();
       const errorMsg = document.getElementById('errorMsg');
+      const successMsg = document.getElementById('successMsg');
       const saveBtn = document.getElementById('saveBtn');
 
-      errorMsg.style.display = 'none';
+      hideMessages();
 
       if (!content) {
         errorMsg.textContent = 'Catatan tidak boleh kosong.';
@@ -370,23 +523,28 @@
       saveBtn.textContent = 'Menyimpan...';
 
       try {
-        const noteId = generateId(8);
-        const user = auth.currentUser;
+        if (editingNoteId) {
+          // Mode Update
+          await database.ref('notes/' + editingNoteId).update({
+            content: content,
+            updatedAt: Date.now()
+          });
+          successMsg.textContent = 'Catatan berhasil diperbarui!';
+        } else {
+          // Mode Buat Baru
+          const noteId = generateId(8);
+          await database.ref('notes/' + noteId).set({
+            content: content,
+            createdAt: Date.now(),
+            createdBy: currentUser.uid,
+            createdByEmail: currentUser.email
+          });
+          successMsg.textContent = 'Catatan berhasil disimpan! Link: ' + window.location.origin + '/?' + noteId;
+        }
 
-        await database.ref('notes/' + noteId).set({
-          content: content,
-          createdAt: Date.now(),
-          createdBy: user.uid,
-          createdByEmail: user.email
-        });
-
-        // Tampilkan hasil
-        const fullLink = window.location.origin + '/?' + noteId;
-        document.getElementById('resultLink').value = fullLink;
-        document.getElementById('resultBox').style.display = 'block';
-
-        // Scroll ke hasil
-        document.getElementById('resultBox').scrollIntoView({ behavior: 'smooth' });
+        successMsg.style.display = 'block';
+        cancelEdit();
+        loadMyNotes();
 
       } catch (error) {
         console.error(error);
@@ -394,27 +552,51 @@
         errorMsg.style.display = 'block';
       } finally {
         saveBtn.disabled = false;
-        saveBtn.textContent = 'Simpan Catatan';
+        if (!editingNoteId) {
+          saveBtn.textContent = 'Simpan Catatan';
+        } else {
+          saveBtn.textContent = 'Update Catatan';
+        }
       }
     }
 
     // ======================
-    // Copy Link
+    // Salin Link
     // ======================
-    function copyLink() {
-      const input = document.getElementById('resultLink');
-      input.select();
-      navigator.clipboard.writeText(input.value).then(() => {
-        const btn = event.target;
-        const original = btn.textContent;
-        btn.textContent = 'Tersalin!';
-        setTimeout(() => btn.textContent = original, 2000);
+    function copyNoteLink(noteId) {
+      const link = window.location.origin + '/?' + noteId;
+      navigator.clipboard.writeText(link).then(() => {
+        alert('Link disalin:\n' + link);
       });
     }
 
     // ======================
-    // Logout
+    // Hapus Catatan
     // ======================
+    function deleteNote(noteId) {
+      if (!confirm('Yakin ingin menghapus catatan "' + noteId + '"?')) return;
+
+      database.ref('notes/' + noteId).remove()
+        .then(() => {
+          // Kalau sedang mengedit catatan ini, batalkan edit
+          if (editingNoteId === noteId) {
+            cancelEdit();
+          }
+          loadMyNotes();
+        })
+        .catch((err) => {
+          alert('Gagal menghapus: ' + err.message);
+        });
+    }
+
+    // ======================
+    // Helper
+    // ======================
+    function hideMessages() {
+      document.getElementById('errorMsg').style.display = 'none';
+      document.getElementById('successMsg').style.display = 'none';
+    }
+
     function logout() {
       auth.signOut().then(() => {
         window.location.href = '/login.html';
