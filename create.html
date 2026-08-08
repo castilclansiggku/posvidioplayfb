@@ -381,7 +381,7 @@
         document.getElementById('displayEmail').textContent = user.email;
         loadMyNotes();
       } else {
-        window.location.href = '/login.html';
+        window.location.href = '/login';
       }
     });
 
@@ -599,7 +599,7 @@
 
     function logout() {
       auth.signOut().then(() => {
-        window.location.href = '/login.html';
+        window.location.href = '/login';
       });
     }
   </script>
