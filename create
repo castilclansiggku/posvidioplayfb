@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Buat Catatan - SafeNote</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Firebase SDK (Compat) -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+  <style>
+    :root {
+      --bg: #0f1117;
+      --bg-card: #1a1d27;
+      --bg-input: #12151f;
+      --text: #e8eaed;
+      --text-muted: #9aa0a6;
+      --border: #2d3343;
+      --primary: #6c8cff;
+      --primary-hover: #5a7af0;
+      --success: #34d399;
+      --danger: #f87171;
+      --radius: 12px;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      line-height: 1.6;
+    }
+
+    header {
+      border-bottom: 1px solid var(--border);
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--bg-card);
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+
+    .logo {
+      font-size: 1.25rem;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      color: var(--text);
+      text-decoration: none;
+    }
+
+    .logo span {
+      color: var(--primary);
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 9px 16px;
+      border-radius: 9px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-family: inherit;
+      text-decoration: none;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-hover);
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+    }
+
+    .btn-ghost:hover {
+      background: var(--bg-input);
+      color: var(--text);
+    }
+
+    .btn-danger {
+      background: rgba(248, 113, 113, 0.15);
+      color: var(--danger);
+      border: 1px solid rgba(248, 113, 113, 0.3);
+    }
+
+    .container {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 40px 20px 80px;
+    }
+
+    h1 {
+      font-size: 1.6rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+      letter-spacing: -0.03em;
+    }
+
+    .subtitle {
+      color: var(--text-muted);
+      margin-bottom: 28px;
+      font-size: 0.95rem;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      font-size: 0.875rem;
+      font-weight: 500;
+      margin-bottom: 8px;
+      color: var(--text);
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 320px;
+      padding: 18px 20px;
+      font-size: 1rem;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--bg-input);
+      color: var(--text);
+      outline: none;
+      resize: vertical;
+      font-family: inherit;
+      line-height: 1.7;
+      transition: border-color 0.2s;
+    }
+
+    textarea:focus {
+      border-color: var(--primary);
+    }
+
+    textarea::placeholder {
+      color: var(--text-muted);
+    }
+
+    .actions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+
+    /* Result box setelah berhasil */
+    #resultBox {
+      display: none;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      margin-top: 28px;
+    }
+
+    #resultBox h3 {
+      font-size: 1.1rem;
+      margin-bottom: 12px;
+      color: var(--success);
+    }
+
+    .link-box {
+      display: flex;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .link-box input {
+      flex: 1;
+      padding: 12px 14px;
+      border-radius: 9px;
+      border: 1.5px solid var(--border);
+      background: var(--bg-input);
+      color: var(--text);
+      font-size: 0.9rem;
+      outline: none;
+      font-family: monospace;
+    }
+
+    .user-info {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-bottom: 20px;
+    }
+
+    .error-msg {
+      color: var(--danger);
+      font-size: 0.875rem;
+      margin-top: 10px;
+      display: none;
+    }
+
+    /* Loading overlay */
+    #authLoading {
+      position: fixed;
+      inset: 0;
+      background: var(--bg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid var(--border);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    @media (max-width: 600px) {
+      .container {
+        padding: 28px 16px 60px;
+      }
+
+      textarea {
+        min-height: 260px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Loading Auth Check -->
+  <div id="authLoading">
+    <div class="spinner"></div>
+    <p style="color: var(--text-muted);">Memeriksa login...</p>
+  </div>
+
+  <!-- Header -->
+  <header>
+    <a href="/" class="logo">Safe<span>Note</span></a>
+    <div style="display: flex; gap: 10px; align-items: center;">
+      <span id="userEmail" style="font-size: 0.85rem; color: var(--text-muted);"></span>
+      <button class="btn btn-danger" onclick="logout()">Logout</button>
+    </div>
+  </header>
+
+  <main class="container" id="mainContent" style="display: none;">
+    <h1>Buat Catatan Baru</h1>
+    <p class="subtitle">Tulis teks, kode, atau catatan apa saja. Setelah disimpan, kamu akan mendapat tautan unik.</p>
+
+    <div class="user-info">
+      Login sebagai: <strong id="displayEmail"></strong>
+    </div>
+
+    <div class="form-group">
+      <label for="noteContent">Isi Catatan</label>
+      <textarea id="noteContent" placeholder="Tulis catatanmu di sini..."></textarea>
+    </div>
+
+    <div class="actions">
+      <button class="btn btn-primary" id="saveBtn" onclick="saveNote()">Simpan Catatan</button>
+      <a href="/" class="btn btn-ghost">Batal</a>
+    </div>
+
+    <p class="error-msg" id="errorMsg"></p>
+
+    <!-- Hasil setelah berhasil -->
+    <div id="resultBox">
+      <h3>Catatan berhasil disimpan!</h3>
+      <p style="color: var(--text-muted); font-size: 0.9rem;">Salin tautan di bawah ini untuk membagikan catatan:</p>
+      <div class="link-box">
+        <input type="text" id="resultLink" readonly>
+        <button class="btn btn-primary" onclick="copyLink()">Salin</button>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    // ======================
+    // Firebase Config
+    // ======================
+    const firebaseConfig = {
+      apiKey: "AIzaSyBoqAYX279Cjhj2ts74IDTFuE1GDoji1H0",
+      authDomain: "justpasteku.firebaseapp.com",
+      databaseURL: "https://justpasteku-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "justpasteku",
+      storageBucket: "justpasteku.firebasestorage.app",
+      messagingSenderId: "259720666291",
+      appId: "1:259720666291:web:6133045d2681871b8164c6"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const database = firebase.database();
+
+    // ======================
+    // Cek Login
+    // ======================
+    auth.onAuthStateChanged((user) => {
+      const loading = document.getElementById('authLoading');
+      const main = document.getElementById('mainContent');
+
+      if (user) {
+        // Sudah login
+        loading.style.display = 'none';
+        main.style.display = 'block';
+        document.getElementById('userEmail').textContent = user.email;
+        document.getElementById('displayEmail').textContent = user.email;
+      } else {
+        // Belum login → lempar ke login.html
+        window.location.href = '/login.html';
+      }
+    });
+
+    // ======================
+    // Generate ID acak
+    // ======================
+    function generateId(length = 8) {
+      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789';
+      let result = '';
+      for (let i = 0; i < length; i++) {
+        result += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      return result;
+    }
+
+    // ======================
+    // Simpan Catatan
+    // ======================
+    async function saveNote() {
+      const content = document.getElementById('noteContent').value.trim();
+      const errorMsg = document.getElementById('errorMsg');
+      const saveBtn = document.getElementById('saveBtn');
+
+      errorMsg.style.display = 'none';
+
+      if (!content) {
+        errorMsg.textContent = 'Catatan tidak boleh kosong.';
+        errorMsg.style.display = 'block';
+        return;
+      }
+
+      saveBtn.disabled = true;
+      saveBtn.textContent = 'Menyimpan...';
+
+      try {
+        const noteId = generateId(8);
+        const user = auth.currentUser;
+
+        await database.ref('notes/' + noteId).set({
+          content: content,
+          createdAt: Date.now(),
+          createdBy: user.uid,
+          createdByEmail: user.email
+        });
+
+        // Tampilkan hasil
+        const fullLink = window.location.origin + '/?' + noteId;
+        document.getElementById('resultLink').value = fullLink;
+        document.getElementById('resultBox').style.display = 'block';
+
+        // Scroll ke hasil
+        document.getElementById('resultBox').scrollIntoView({ behavior: 'smooth' });
+
+      } catch (error) {
+        console.error(error);
+        errorMsg.textContent = 'Gagal menyimpan: ' + error.message;
+        errorMsg.style.display = 'block';
+      } finally {
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Simpan Catatan';
+      }
+    }
+
+    // ======================
+    // Copy Link
+    // ======================
+    function copyLink() {
+      const input = document.getElementById('resultLink');
+      input.select();
+      navigator.clipboard.writeText(input.value).then(() => {
+        const btn = event.target;
+        const original = btn.textContent;
+        btn.textContent = 'Tersalin!';
+        setTimeout(() => btn.textContent = original, 2000);
+      });
+    }
+
+    // ======================
+    // Logout
+    // ======================
+    function logout() {
+      auth.signOut().then(() => {
+        window.location.href = '/login.html';
+      });
+    }
+  </script>
+</body>
+</html>
