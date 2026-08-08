@@ -1,13 +1,371 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="id" data-theme="dark">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Halaman Utama</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SafeNote</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg: #0f1117;
+      --bg-card: #1a1d27;
+      --bg-input: #12151f;
+      --text: #e8eaed;
+      --text-muted: #9aa0a6;
+      --border: #2d3343;
+      --primary: #6c8cff;
+      --primary-hover: #5a7af0;
+      --success: #34d399;
+      --danger: #f87171;
+      --radius: 12px;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      line-height: 1.6;
+    }
+
+    /* Header */
+    header {
+      border-bottom: 1px solid var(--border);
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--bg-card);
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+
+    .logo {
+      font-size: 1.25rem;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      color: var(--text);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .logo span {
+      color: var(--primary);
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 9px 16px;
+      border-radius: 9px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-family: inherit;
+      text-decoration: none;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-hover);
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+    }
+
+    .btn-ghost:hover {
+      background: var(--bg-input);
+      color: var(--text);
+    }
+
+    /* Main Content */
+    .container {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 40px 20px 80px;
+    }
+
+    /* Homepage (tidak ada parameter) */
+    #homeView {
+      display: none;
+      text-align: center;
+      padding-top: 60px;
+    }
+
+    #homeView h1 {
+      font-size: 2.2rem;
+      font-weight: 700;
+      letter-spacing: -0.04em;
+      margin-bottom: 12px;
+    }
+
+    #homeView p {
+      color: var(--text-muted);
+      font-size: 1.1rem;
+      margin-bottom: 36px;
+      max-width: 480px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    /* Note View */
+    #noteView {
+      display: none;
+    }
+
+    .note-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .note-id {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      background: var(--bg-input);
+      padding: 6px 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      font-family: monospace;
+    }
+
+    .note-content {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 28px 32px;
+      min-height: 280px;
+      font-size: 1.05rem;
+      line-height: 1.75;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .note-content:empty::before {
+      content: "Memuat catatan...";
+      color: var(--text-muted);
+    }
+
+    /* Loading & Error */
+    .loading, .error-box {
+      text-align: center;
+      padding: 80px 20px;
+    }
+
+    .spinner {
+      width: 42px;
+      height: 42px;
+      border: 3px solid var(--border);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 20px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .error-box h2 {
+      font-size: 1.4rem;
+      margin-bottom: 10px;
+    }
+
+    .error-box p {
+      color: var(--text-muted);
+      margin-bottom: 24px;
+    }
+
+    /* Footer */
+    footer {
+      text-align: center;
+      padding: 30px 20px;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      border-top: 1px solid var(--border);
+      margin-top: 40px;
+    }
+
+    /* Responsive */
+    @media (max-width: 600px) {
+      #homeView h1 {
+        font-size: 1.7rem;
+      }
+
+      .note-content {
+        padding: 20px;
+        font-size: 1rem;
+      }
+
+      .container {
+        padding: 28px 16px 60px;
+      }
+    }
+  </style>
 </head>
 <body>
-    <h1>Website Berhasil!</h1>
-    <p>Jika kamu melihat ini, berarti index.html sudah terdeteksi.</p>
-    <a href="/admin">Masuk ke Admin</a>
+
+  <!-- Header -->
+  <header>
+    <a href="/" class="logo">Safe<span>Note</span></a>
+    <div class="header-actions">
+      <a href="/create.html" class="btn btn-primary">+ Buat Catatan</a>
+    </div>
+  </header>
+
+  <!-- Main -->
+  <main class="container">
+
+    <!-- Homepage (tidak ada ?parameter) -->
+    <div id="homeView">
+      <h1>Simpan & Bagikan Teks dengan Aman</h1>
+      <p>Tulis catatan, kode, atau teks apa saja lalu bagikan lewat tautan unik. Sederhana, cepat, dan tanpa ribet.</p>
+      <a href="/create.html" class="btn btn-primary" style="padding: 14px 28px; font-size: 1rem;">
+        Buat Catatan Baru
+      </a>
+    </div>
+
+    <!-- Note View (ada ?parameter) -->
+    <div id="noteView">
+      <div class="note-meta">
+        <div class="note-id" id="noteIdDisplay">—</div>
+        <button class="btn btn-ghost" id="copyLinkBtn" onclick="copyCurrentLink()">Salin Tautan</button>
+      </div>
+      <div class="note-content" id="noteContent"></div>
+    </div>
+
+    <!-- Loading -->
+    <div id="loadingView" class="loading" style="display: none;">
+      <div class="spinner"></div>
+      <p style="color: var(--text-muted);">Memuat catatan...</p>
+    </div>
+
+    <!-- Error / Not Found -->
+    <div id="errorView" class="error-box" style="display: none;">
+      <h2>Catatan tidak ditemukan</h2>
+      <p>Link yang kamu buka mungkin sudah dihapus atau tidak valid.</p>
+      <a href="/" class="btn btn-primary">Kembali ke Beranda</a>
+    </div>
+
+  </main>
+
+  <footer>
+    SafeNote &mdash; Simpan teks dengan mudah
+  </footer>
+
+  <script>
+    // ======================
+    // Konfigurasi (nanti diisi)
+    // ======================
+    // Firebase & Redis akan ditambahkan nanti
+
+    // ======================
+    // Ambil parameter dari URL
+    // ======================
+    function getNoteIdFromUrl() {
+      const params = new URLSearchParams(window.location.search);
+      // Ambil parameter pertama (misal ?Xgdjub atau ?id=Xgdjub)
+      if (params.has('id')) return params.get('id');
+      
+      // Kalau formatnya ?Xgdjub (tanpa key)
+      const raw = window.location.search.substring(1);
+      if (raw && !raw.includes('=')) return raw;
+      
+      return null;
+    }
+
+    // ======================
+    // Tampilkan view tertentu
+    // ======================
+    function showView(viewName) {
+      document.getElementById('homeView').style.display = 'none';
+      document.getElementById('noteView').style.display = 'none';
+      document.getElementById('loadingView').style.display = 'none';
+      document.getElementById('errorView').style.display = 'none';
+
+      if (viewName === 'home') document.getElementById('homeView').style.display = 'block';
+      if (viewName === 'note') document.getElementById('noteView').style.display = 'block';
+      if (viewName === 'loading') document.getElementById('loadingView').style.display = 'block';
+      if (viewName === 'error') document.getElementById('errorView').style.display = 'block';
+    }
+
+    // ======================
+    // Copy link
+    // ======================
+    function copyCurrentLink() {
+      navigator.clipboard.writeText(window.location.href).then(() => {
+        const btn = document.getElementById('copyLinkBtn');
+        const original = btn.textContent;
+        btn.textContent = 'Tersalin!';
+        setTimeout(() => btn.textContent = original, 2000);
+      });
+    }
+
+    // ======================
+    // Main Logic
+    // ======================
+    async function main() {
+      const noteId = getNoteIdFromUrl();
+
+      // Tidak ada parameter → tampilkan homepage
+      if (!noteId) {
+        showView('home');
+        return;
+      }
+
+      // Ada parameter → load catatan
+      showView('loading');
+      document.getElementById('noteIdDisplay').textContent = noteId;
+
+      // ==============================
+      // NANTI: Cek localStorage → Redis → Firebase
+      // Untuk sekarang masih dummy
+      // ==============================
+      
+      // Contoh sementara (hapus nanti)
+      setTimeout(() => {
+        // Simulasi berhasil
+        // document.getElementById('noteContent').textContent = "Ini contoh isi catatan...";
+        // showView('note');
+
+        // Simulasi tidak ketemu
+        showView('error');
+      }, 800);
+    }
+
+    // Jalankan
+    main();
+  </script>
 </body>
 </html>
