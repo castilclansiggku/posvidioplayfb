@@ -430,7 +430,7 @@
   // ======================
   async function checkRedis(noteId) {
     try {
-      const res = await fetch(`/.netlify/functions/redis-link?id=${encodeURIComponent(noteId)}`);
+      const res = await fetch(`/api/redis-link?id=${encodeURIComponent(noteId)}`);
       const data = await res.json();
       return data.found ? data.originalUrl : null;
     } catch (err) {
@@ -441,7 +441,7 @@
 
   async function saveToRedis(noteId, content) {
     try {
-      await fetch("/.netlify/functions/redis-link", {
+      await fetch("/api/redis-link", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ shortId: noteId, originalUrl: content })
